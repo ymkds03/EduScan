@@ -1,0 +1,60 @@
+name: CI/CD Pipeline
+
+# Ejecuta el pipeline en cada push o pull request a las ramas main y develop
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+# Define los jobs del pipeline
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Chequea el repositorio
+      - name: Check out the code
+        uses: actions/checkout@v2
+
+      # Configura Node.js (cambia la versión según tu proyecto)
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '20.9.0'
+
+      # Instala las dependencias
+      - name: Install dependencies
+        run: npm install
+
+      # Corre los tests
+      - name: Run tests
+        run: npm test -- --watchAll=false
+
+      # Construye la aplicación
+      - name: Build the project
+        run: npm run build
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build-and-test  # Ejecuta el deploy solo si build-and-test es exitoso
+
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '16'
+
+      - name: Install dependencies
+        run: npm install
+
+      # Publica la aplicación en GitHub Pages (para aplicaciones estáticas de React)
+      - name: Deploy to GitHub Pages
+        if: github.ref == 'refs/heads/main'
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./build
